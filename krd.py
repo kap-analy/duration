@@ -15,10 +15,10 @@
 # - DB 저장을 위해 key rate duration은 14개 구간에 대해 나온다.
 # - 이 key rate duration의 합이 종목의 듀레이션 값이 나오게 조정한다.
 
-import numpy as np
-import pandas as pd
-from datetime import datetime, timedelta
 from bond import *
+from get_data import *
+from logging_pack import *
+
 
 # 샘플데이터 생성
 # cash_count: 현금흐름의 갯수
@@ -43,19 +43,20 @@ cf_raw = [[1, 0.533, 2500000], [2, 1.033, 2500000], [3, 1.533, 2500000], [4, 2.0
           [16, 8.033, 2500000], [17, 8.533, 2500000], [18, 9.033, 2500000], [19, 9.533, 2500000], [20, 10.033, 102500000]]
 cf_data = pd.DataFrame(data = cf_raw, columns=['num', 'cash_time', 'cash_amt'])
 
-spot_curve_raw = [[0.25, 0.449], [0.5, 0.624], [0.75, 0.637], [1, 0.653], [1.5, 0.797], [2, 0.871],
-                  [2.5, 0.935], [3, 0.984], [4, 1.149], [5, 1.307], [7, 1.393], [10, 1.575], [20, 1.712], [30, 1.695]]
-spot_curve_data = pd.DataFrame(data = spot_curve_raw, columns=['key_rate', 'yield'])
-
-
-print("채권 현금흐름은 다음과 같습니다.")
+# spot_curve_raw = [[0.25, 0.449], [0.5, 0.624], [0.75, 0.637], [1, 0.653], [1.5, 0.797], [2, 0.871],
+#                   [2.5, 0.935], [3, 0.984], [4, 1.149], [5, 1.307], [7, 1.393], [10, 1.575], [20, 1.712], [30, 1.695]]
+# spot_yield_data = pd.DataFrame(data = spot_curve_raw, columns=['key_rate', 'yield'])
+logger.debug("key rate duration 산출을 시작합니다.")
+print("채권 현금흐름은 다음과 같습니다. !!!!!!")
 print(cf_data)
 
-print("spot curve 데이터는 다음과 같습니다.")
-print(spot_curve_data)
+print("spot yield는 다음과 같습니다. !!!!!!")
+spot_yield_data = get_spot_yield('20201005', 'C300')
+
+print(spot_yield_data)
 
 # Bond 객체를 생성합니다.
 bond1 = Bond(cf_data)
 
-krd = bond1.key_rate_duration(spot_curve_data=spot_curve_data, interestpaycalmcnt=6, delta=0.01)
+krd = bond1.key_rate_duration(spot_yield_data=spot_yield_data, interestpaycalmcnt=6, delta=0.01)
 print("key rate duration은 다음과 같습니다.\n", krd)
