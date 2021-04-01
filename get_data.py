@@ -37,13 +37,3 @@ def get_spot_yield(td = '20200904', sector = 'A100'):
     spot_yield_data = df[['key_rate', 'yield']]
     return spot_yield_data
 
-
-issue_date = '20210305'
-due_date = '20240304'
-amount = 10000
-coupon_rate = 0.05
-interestpaycalmcnt = 6
-td = '20210330'
-
-
-print(cf)

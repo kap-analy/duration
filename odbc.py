@@ -27,4 +27,3 @@ class Kapodbc:
         return conn, cursor
 
 
-np.cumprod()

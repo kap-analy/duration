@@ -13,8 +13,8 @@ from dateutil.relativedelta import relativedelta
 class Bond:
 
     # 채권 정보: 발행일, 만기일, 쿠폰, 이자계산지급월수
-
-    def __init__(self, td, issue_date, due_date, amount = 10000, coupon_rate, interestpaycalmcnt):
+    def __init__(self, td, issue_date, due_date, amount,
+                 coupon_rate, interestpaycalmcnt):
         self.td = td
         self.issue_date = issue_date
         self.due_date = due_date
@@ -57,7 +57,8 @@ class Bond:
     # spot_yield_data : key_rate, yield
     # 채권 가격을 반환해 줍니다.
 
-    def price(self, cf_data, spot_yield_data):
+    def price(self, spot_yield_data):
+        cf_data = self.bond_cf()
         apply_yield = []
         for i in range(len(cf_data)):
             chk_value = cf_data.iloc[i]['cash_time']
@@ -78,7 +79,7 @@ class Bond:
             apply_yield.append(apply_yield_value)
 
         cf_data['apply_yield'] = apply_yield
-        cf_data['pv_factor'] = 1 / (1 + cf_data['apply_yield'] / 100 / (12 / interestpaycalmcnt)) ** (cf_data['num'])
+        cf_data['pv_factor'] = 1 / (1 + cf_data['apply_yield'] / 100 / (12 / self.interestpaycalmcnt)) ** (cf_data.index + 1)
         cf_data['pv_cash_amt'] = cf_data['pv_factor'] * cf_data['cash_amt']
 
         bond_price = cf_data['pv_cash_amt'].sum()
