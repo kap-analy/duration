@@ -7,17 +7,25 @@ import math
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
-
-
+td = '20200901' # key rate duration을 구할 날짜입니다.
+issue_date = '20150626' # 채권의 발행일
+due_date  = '20300625' # 채권의 만기일
+nextpaydate = '20200925'
+amount = 10000
+coupon_rate = 0.02835
+interestpaycalmcnt = 4
+Sector = 'B300'
+code = 'KR2005041562'
 
 class Bond:
 
     # 채권 정보: 발행일, 만기일, 쿠폰, 이자계산지급월수
-    def __init__(self, td, issue_date, due_date, amount,
+    def __init__(self, td, issue_date, due_date, nextpaydate, amount,
                  coupon_rate, interestpaycalmcnt):
         self.td = td
         self.issue_date = issue_date
         self.due_date = due_date
+        self.nextpaydate = nextpaydate
         self.amount = amount
         self.coupon_rate = coupon_rate
         self.interestpaycalmcnt = interestpaycalmcnt
@@ -29,21 +37,22 @@ class Bond:
         # 날짜를 datetime 타입으로 변경합니다.
         issue_date = datetime.strptime(self.issue_date, '%Y%m%d').date()
         due_date = datetime.strptime(self.due_date, '%Y%m%d').date()
+        nextpaydate = datetime.strptime(self.nextpaydate, '%Y%m%d').date()
         td = datetime.strptime(self.td, '%Y%m%d').date()
-        diff = (due_date - issue_date).days / 365 # 날짜 차이
-        cf_num = math.ceil(diff * 12 / self.interestpaycalmcnt)
+        diff = (due_date - td).days / 365  # 날짜 차이
+        cf_num = math.ceil(diff * self.interestpaycalmcnt)
 
         cf = []
 
         for i in range(cf_num):
             if i == 0:
-                cf_td = issue_date
-            if i == cf_num:
+                cf_td = nextpaydate
+            if i == cf_num-1:
                 cf_td = due_date
-                cash_amt = self.amount + self.amount * self.coupon_rate * self.interestpaycalmcnt / 12
+                cash_amt = self.amount + self.amount * self.coupon_rate / self.interestpaycalmcnt
             else:
-                cf_td += relativedelta(months=self.interestpaycalmcnt)
-                cash_amt = self.amount * self.coupon_rate * self.interestpaycalmcnt / 12
+                cf_td += relativedelta(months=12/ self.interestpaycalmcnt)
+                cash_amt = self.amount * self.coupon_rate / self.interestpaycalmcnt
             cash_time = (cf_td - td).days / 365
             cf.append([cf_td, cash_time, cash_amt])
         cf = pd.DataFrame(cf, columns=['cf_td', 'cash_time', 'cash_amt'])

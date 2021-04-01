@@ -12,14 +12,20 @@ def get_daily_info(start_td, end_td):
 # 채권 정보를 가져옵니다
 # 코드 정보를 입력하면, 종목의 발행일, 만기일, 이자지급계산월수를 가져옵니다.
 def get_bond_info(code):
-    pass
+    kapodbc = Kapodbc()
+    conn, cursor = kapodbc.connect()
+    sql = "select td = '2020-09-04', Sector =  SectorCode, issue_date = convert(varchar(10),PublicDate,120) , due_date = convert(varchar(10),DueDate,120) , amount = 10000 ," + \
+          "coupon_rate = CouponRate , interestpaycalmcnt = InterestPayCalMCnt	from BPRPA..M_BOND_INFO	where SecurityCode = '" + code + "'"
+    df = pd.read_sql(sql, conn)
+    bond_info = df[['td','Sector','issue_date','due_date','amount','coupon_rate','interestpaycalmcnt']]
+    return bond_info
 
 # spot 금리데이터를 가져옵니다
 # 날짜와 섹터코드를 입력하면 key rate별 spot금리를 가져옵니다.
 # 입력하는 날짜는 영업일이어야 합니다.
 # 출력 형태는 [key_rate, yield] 형태의 pandas dataframe 입니다.
 
-def get_spot_yield(td = '20200904', sector = 'A100'):
+def get_spot_yield(td, sector):
     # key_rate 값을 지정해 줍니다.
     #key_rate = [[0.25], [0.5], [0.75], [1], [1.5], [2], [2.5], [3], [4], [5], [7], [10], [20], [30]]
     key_rate = np.array([0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4, 5, 7, 10, 20, 30])

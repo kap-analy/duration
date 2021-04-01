@@ -18,6 +18,7 @@
 from bond import *
 from get_data import *
 from logging_pack import *
+from odbc import *
 
 
 # 샘플데이터 생성
@@ -51,24 +52,36 @@ logger.debug("key rate duration 산출을 시작합니다.")
 ########################################################################
 # 데이터를 입력합니다.                                                       #
 ########################################################################
-td = '20210330' # key rate duration을 구할 날짜입니다.
-issue_date = '20210305' # 채권의 발행일
-due_date  = '20240304' # 채권의 만기일
+
+
+td = '20200901' # key rate duration을 구할 날짜입니다.
+issue_date = '20150626' # 채권의 발행일
+due_date  = '20300625' # 채권의 만기일
+nextpaydate = '20200925'
 amount = 10000
-coupon_rate = 0.04
-interestpaycalmcnt = 3
+coupon_rate = 0.02835
+interestpaycalmcnt = 4
+Sector = 'B300'
+code = 'KR2005041562'
 
 # Bond 객체를 생성합니다.
-bond1 = Bond(td=td, issue_date=issue_date, due_date=due_date,
+bond1 = Bond(td=td, issue_date=issue_date, due_date=due_date, nextpaydate = nextpaydate,
              amount=amount, coupon_rate=coupon_rate, interestpaycalmcnt=interestpaycalmcnt)
 
-bond1_cf = bond1.bond_cf()
+
+Kapodbc(server = '10.10.10.18,33440', db = 'BPRPA', user = 'kap_assetm',  pwd = 'bprpaapp#2018')
+
+
+print("채권 발행정보는 다음과 같습니다. !!!!!!")
+bond_info = get_bond_info(code)
+print(bond_info)
+
 print("채권 현금흐름은 다음과 같습니다. !!!!!!")
+bond1_cf = bond1.bond_cf()
 print(bond1_cf)
 
 print("spot yield는 다음과 같습니다. !!!!!!")
-spot_yield_data = get_spot_yield('20201005', 'C300')
-
+spot_yield_data = get_spot_yield(td,Sector)
 print(spot_yield_data)
 
 krd = bond1.key_rate_duration(spot_yield_data=spot_yield_data, delta=0.01)
