@@ -12,7 +12,7 @@ pwd = 'bprpaapp#2018'
 
 class Kapodbc:
 
-    def __init__(self, server=server, db=db, user=user, pwd=pwd):
+    def __init__(self, server, db, user, pwd):
         self.server = server
         self.db = db
         self.user = user

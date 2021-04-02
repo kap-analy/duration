@@ -19,7 +19,7 @@ from bond import *
 from get_data import *
 from logging_pack import *
 from odbc import *
-
+import pandas as pd
 
 # 샘플데이터 생성
 # cash_count: 현금흐름의 갯수
@@ -54,35 +54,40 @@ logger.debug("key rate duration 산출을 시작합니다.")
 ########################################################################
 
 
-td = '20200901' # key rate duration을 구할 날짜입니다.
-issue_date = '20150626' # 채권의 발행일
-due_date  = '20300625' # 채권의 만기일
-nextpaydate = '20200925'
-amount = 10000
-coupon_rate = 0.02835
-interestpaycalmcnt = 4
-Sector = 'B300'
-code = 'KR2005041562'
+start_td = '20200904'
 
-# Bond 객체를 생성합니다.
-bond1 = Bond(td=td, issue_date=issue_date, due_date=due_date, nextpaydate = nextpaydate,
+# 대상종목을 가져옵니다.
+bond_info = get_bond_info(start_td)
+
+krd_result = []
+for i in range(len(bond_info)):
+
+# 채권 데이터 생성에 필요한 Input data를 입력합니다.
+    issue_date = datetime.strptime(bond_info.issue_date[i],'%Y-%m-%d').strftime("%Y%m%d")
+    due_date = datetime.strptime(bond_info.issue_date[i],'%Y-%m-%d').strftime("%Y%m%d")
+    nextpaydate = datetime.strptime(bond_info.nextpay_date[i],'%Y-%m-%d').strftime("%Y%m%d")
+    amount = 10000
+    coupon_rate =bond_info.coupon_rate[i]
+    interestpaycalmcnt = bond_info.InterestPayCalMCnt[i]
+    sector = bond_info.sector[i]
+    code = bond_info.code[i]
+
+    # Bond 객체를 생성합니다.
+    bond1 = Bond(td=td, issue_date=issue_date, due_date=due_date, nextpaydate = nextpaydate,
              amount=amount, coupon_rate=coupon_rate, interestpaycalmcnt=interestpaycalmcnt)
 
+    # 종목별 현금흐름을 만듭니다.
+    bond1_cf = bond1.bond_cf()
 
-Kapodbc(server = '10.10.10.18,33440', db = 'BPRPA', user = 'kap_assetm',  pwd = 'bprpaapp#2018')
+    # 섹터 spot yield를 가져옵니다.
+    spot_yield_data = get_spot_yield(td,sector)
 
+    # Key rate duration을 생성합니다.
+    krd = bond1.key_rate_duration(spot_yield_data=spot_yield_data, delta=0.01)
+    print("key rate duration은 다음과 같습니다.\n", krd)
+    #krd_result = pd.concat([bond_info.td[i],bond_info.code[i],krd])
+#krd = pd.DataFrame(krd, columns=['3M','6M','9M','1Y','1.5Y','2Y','2.5Y','3Y','4Y','5Y','7Y','10Y','20Y','30Y'])
+#krd_result.append(krd)
+#print("key rate duration은 다음과 같습니다.\n", krd)
+#print("key rate duration은 다음과 같습니다.\n", krd_result)
 
-print("채권 발행정보는 다음과 같습니다. !!!!!!")
-bond_info = get_bond_info(code)
-print(bond_info)
-
-print("채권 현금흐름은 다음과 같습니다. !!!!!!")
-bond1_cf = bond1.bond_cf()
-print(bond1_cf)
-
-print("spot yield는 다음과 같습니다. !!!!!!")
-spot_yield_data = get_spot_yield(td,Sector)
-print(spot_yield_data)
-
-krd = bond1.key_rate_duration(spot_yield_data=spot_yield_data, delta=0.01)
-print("key rate duration은 다음과 같습니다.\n", krd)
