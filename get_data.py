@@ -32,7 +32,7 @@ def get_bond_info(td):
 	                    "and A.InterestPayFlag like '1%' " + \
 	                    "and A.SecurityCode = B.SecurityCode " + \
 	                    "and B.StdDate = '" + td + "' " + \
-	                    "and A.CR not in ('BB+', 'BB-', 'BB', 'B+', 'B', 'B-', 'CCC') and A.SecurityCode = 'KRC0350C3338'"
+	                    "and A.CR not in ('BB+', 'BB-', 'BB', 'B+', 'B', 'B-', 'CCC') and A.SecurityCode = 'KR103502G396'"
     bond_info = pd.read_sql(sql, conn)
 
     return bond_info

@@ -55,7 +55,7 @@ class Bond:
         elif self.interest_payment_type == '14': # 단리채인 경우
             cf_td = due_date
             cash_time = (cf_td - td).days / 365
-            cash_amt = self.amount * (1 + coupon_rate * maturity)
+            cash_amt = self.amount * (1 + self.coupon_rate * maturity)
             cf_td_data.append([cf_td, cash_time, cash_amt])
 
         elif self.interest_payment_type == '15': #복5단2인 경우
@@ -79,10 +79,10 @@ class Bond:
                     cash_amt = interest_amount
                     if i == cf_num:  # 마지막 현금흐름의 경우
                         if cf_td == due_date:
-                            cash_amt = amount + interest_amount
+                            cash_amt = self.amount + interest_amount
                         else:
                             cf_td = due_date
-                            cash_amt = amount
+                            cash_amt = self.amount
                             if len(cf_td_data) == 0:
                                 cash_amt += interest_amount * ((due_date - td).days / 365) * self.num_of_interest_payment
                             else:
@@ -146,10 +146,10 @@ class Bond:
                 # apply_yield_value += data_diff['yield'] / data_diff['key_rate'] * (cf_data.iloc[i]['cash_time'] - spot_yield_data.iloc[cash_idx - 1]['key_rate'])
             apply_yield.append(apply_yield_value)
         cf_data['apply_yield'] = apply_yield
-        if interest_payment_type == '11': # 할인채의 경우
-            bond_price = amount / ((1 + cf_data['apply_yield'] /100) ** cf_data['cash_time'])
+        if self.interest_payment_type == '11': # 할인채의 경우
+            bond_price = self.amount / ((1 + cf_data['apply_yield'] /100) ** cf_data['cash_time'])
         else:
-            cf_data['pv_factor'] = 1 / (1 + cf_data['apply_yield'] / 100 / num_of_interest_payment) ** (cf_data.index + 1)
+            cf_data['pv_factor'] = 1 / (1 + cf_data['apply_yield'] / 100 / self.num_of_interest_payment) ** (cf_data.index + 1)
             cf_data['pv_cash_amt'] = cf_data['pv_factor'] * cf_data['cash_amt']
             bond_price = cf_data['pv_cash_amt'].sum()
 
@@ -161,7 +161,7 @@ class Bond:
 
         price = self.price(cf_data, spot_yield_data)
         key_rate_duration = []
-        if interest_payment_type == '11' or '12' or '14':  # 할인, 단리, 복리채의 경우
+        if self.interest_payment_type == '11' or '12' or '14':  # 할인, 단리, 복리채의 경우
             i=0
             chk_value = cf_data.iloc[i]['cash_time']
             chk_data = spot_yield_data.iloc[:]['key_rate'].values
