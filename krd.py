@@ -19,6 +19,7 @@ from bond import *
 from get_data import *
 from logging_pack import *
 import timeit
+import datetime
 
 start_time = timeit.default_timer() #시작 시간 체크
 
@@ -112,12 +113,43 @@ for i in range(len(bond_info)):
     krd_df = pd.DataFrame(krd).transpose()
     krd_df.columns = ['M3', 'M6', 'M9', 'Y1', 'Y1.5', 'Y2', 'Y2.5', 'Y3', 'Y4', 'Y5', 'Y7', 'Y10', 'Y20', 'Y30']
 
-    krd_df = krd_df.assign(**{'StdDate': datetime.strptime(td, '%Y%m%d').date(),
-                                'SecurityCode': info['securitycode'],
-                                'KeySum': np.sum(krd, axis = 0)})
-    df = df.append(krd_df)
-    print(i, "번째 key rate duration 산출이 완료되었습니다.")
-print(df)
+    krd_df = krd_df.assign(**{'StdDate': td,
+                              'SecurityCode': info['securitycode'],
+                              'KeySum': np.sum(krd, axis=0)})
+    krd_df = krd_df[['StdDate','SecurityCode','M3', 'M6', 'M9', 'Y1', 'Y1.5', 'Y2', 'Y2.5', 'Y3', 'Y4', 'Y5', 'Y7', 'Y10', 'Y20', 'Y30','KeySum']]
 
+    df = df.append(krd_df)
+
+    df['InputDateTime']=datetime.datetime.now().date()
+
+    print(i, "번째 key rate duration 산출이 완료되었습니다.")
+
+print(df)
 terminate_time = timeit.default_timer() #종료 시간 체크
 print("%f초 걸렸습니다" %(terminate_time - start_time))
+
+
+
+
+# DB Insert
+
+import pyodbc
+conn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};'
+                          'SERVER=10.10.10.20,33440;'
+                          'DATABASE=BPRPA;'
+                          'UID=kap_assetm;'
+                          'PWD=bprpaapp#2018;')
+
+cursor = conn.cursor()
+
+sql = 'INSERT INTO BPRPA.dbo.H_SECURITY_KEYRATE_DUR ([StdDate],[SecurityCode],[M3], [M6], [M9], [Y1], [Y1.5], [Y2], [Y2.5], [Y3], [Y4], [Y5], [Y7], [Y10], [Y20], [Y30], [KeySum],[InputDateTime]) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
+
+for i in range(len(df)):
+    values = df['StdDate'][i], df['SecurityCode'][i], df['M3'][i], df['M6'][i], df['M9'][i], df['Y1'][i], df['Y1.5'][i], \
+             df['Y2'][i], df['Y2.5'][i], df['Y3'][i], df['Y4'][i], df['Y5'][i], df['Y7'][i], df['Y10'][i], df['Y20'][i], \
+             df['Y30'][i], df['KeySum'][i], df['InputDateTime'][i]
+
+values = '2020-09-15', 'KRC0350C3332', 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'2020-09-15'
+
+cursor.execute(sql, values)
+conn.commit()

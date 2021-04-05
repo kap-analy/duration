@@ -25,3 +25,4 @@ class Kapodbc:
         cursor = conn.cursor()
 
         return conn, cursor
+

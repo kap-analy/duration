@@ -126,7 +126,7 @@ class Bond:
     # spot_yield_data : key_rate, yield
     # 채권 가격을 반환해 줍니다.
 
-    def price(self, cf_data, spot_yield_data, spot_yield_data_int):
+    def price(self, cf_data, spot_yield_data):
         apply_yield = []
         for i in range(len(cf_data)):
             chk_value = cf_data.iloc[i]['cash_time']
