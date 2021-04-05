@@ -55,7 +55,7 @@ class Bond:
         elif self.interest_payment_type == '14': # 단리채인 경우
             cf_td = due_date
             cash_time = (cf_td - td).days / 365
-            cash_amt = self.amount * (1 + self.coupon_rate * maturity)
+            cash_amt = self.amount * (1 + coupon_rate * maturity)
             cf_td_data.append([cf_td, cash_time, cash_amt])
 
         elif self.interest_payment_type == '15': #복5단2인 경우
@@ -74,15 +74,15 @@ class Bond:
             # 발행일부터 만기일까지의 현금흐름 발생일을 만들어 낸다.
             i = 1
             while i <= cf_num:
-                cf_td += relativedelta(months=12/self.num_of_interest_payment)
+                cf_td += relativedelta(months=12/num_of_interest_payment)
                 if (cf_td - td).days > 0:
                     cash_amt = interest_amount
                     if i == cf_num:  # 마지막 현금흐름의 경우
                         if cf_td == due_date:
-                            cash_amt = self.amount + interest_amount
+                            cash_amt = amount + interest_amount
                         else:
                             cf_td = due_date
-                            cash_amt = self.amount
+                            cash_amt = amount
                             if len(cf_td_data) == 0:
                                 cash_amt += interest_amount * ((due_date - td).days / 365) * self.num_of_interest_payment
                             else:
@@ -126,7 +126,7 @@ class Bond:
     # spot_yield_data : key_rate, yield
     # 채권 가격을 반환해 줍니다.
 
-    def price(self, cf_data, spot_yield_data):
+    def price(self, cf_data, spot_yield_data, spot_yield_data_int):
         apply_yield = []
         for i in range(len(cf_data)):
             chk_value = cf_data.iloc[i]['cash_time']
@@ -146,10 +146,10 @@ class Bond:
                 # apply_yield_value += data_diff['yield'] / data_diff['key_rate'] * (cf_data.iloc[i]['cash_time'] - spot_yield_data.iloc[cash_idx - 1]['key_rate'])
             apply_yield.append(apply_yield_value)
         cf_data['apply_yield'] = apply_yield
-        if self.interest_payment_type == '11': # 할인채의 경우
-            bond_price = self.amount / ((1 + cf_data['apply_yield'] /100) ** cf_data['cash_time'])
+        if interest_payment_type == '11': # 할인채의 경우
+            bond_price = amount / ((1 + cf_data['apply_yield'] /100) ** cf_data['cash_time'])
         else:
-            cf_data['pv_factor'] = 1 / (1 + cf_data['apply_yield'] / 100 / self.num_of_interest_payment) ** (cf_data.index + 1)
+            cf_data['pv_factor'] = 1 / (1 + cf_data['apply_yield'] / 100 / num_of_interest_payment) ** (cf_data.index + 1)
             cf_data['pv_cash_amt'] = cf_data['pv_factor'] * cf_data['cash_amt']
             bond_price = cf_data['pv_cash_amt'].sum()
 
@@ -166,17 +166,18 @@ class Bond:
             chk_value = cf_data.iloc[i]['cash_time']
             chk_data = spot_yield_data.iloc[:]['key_rate'].values
             cash_idx = search_number_in_array(chk_value, chk_data)
-            for i in range(0, 14):
-                spot_curve_plus = spot_yield_data.copy()
-                spot_curve_minus = spot_yield_data.copy()
-
-                spot_curve_plus.iloc[i]['yield'] += delta
-                spot_curve_minus.iloc[i]['yield'] -= delta
-
-                price_plus = self.price(cf_data, spot_curve_plus)
-                price_minus = self.price(cf_data, spot_curve_minus)
-                duration = (price_minus - price_plus) / (2 * price * delta / 100)
-                key_rate_duration.append(duration)
+            for i in range(len(spot_yield_data)):
+                 if i <= cash_idx-3:
+                     duration = 0
+                 else:
+                    spot_curve_plus = spot_yield_data.copy()
+                    spot_curve_minus = spot_yield_data.copy()
+                    spot_curve_plus.iloc[i]['yield'] += delta
+                    spot_curve_minus.iloc[i]['yield'] -= delta
+                    price_plus = self.price(cf_data, spot_curve_plus)
+                    price_minus = self.price(cf_data, spot_curve_minus)
+                    duration = (price_minus - price_plus) / (2 * price * delta / 100)
+                 key_rate_duration.append(duration)
         else:
             for i in range(len(spot_yield_data)):
                 spot_curve_plus = spot_yield_data.copy()
