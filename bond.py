@@ -9,6 +9,7 @@ from dateutil.relativedelta import relativedelta
 
 
 
+# Bond 클래스 생성해 줄 때 날짜 타입은 datetime 으로 입력합니다.
 
 class Bond:
 
@@ -26,94 +27,62 @@ class Bond:
     # 위 채권정보가 입력되고, [cash_time, cash_amt] 정보가 있는 pandas dataframe을 출력합니다.
 
     def bond_cf(self):
-        # 날짜를 datetime 타입으로 변경합니다.
-        issue_date = datetime.strptime(self.issue_date, '%Y%m%d').date()
-        due_date = datetime.strptime(self.due_date, '%Y%m%d').date()
-        maturity = math.ceil((due_date - issue_date).days / 365)
-        td = datetime.strptime(self.td, '%Y%m%d').date()
+        maturity = math.ceil((self.due_date - self.issue_date).days / 365)
         # 이자지급구분에 따라 계산식을 달리합니다.
         cf_td_data = []
         if self.interest_payment_type == '11': # 할인채인 경우
-            cf_td = due_date
-            cash_time = (cf_td - td).days / 365
+            cf_td = self.due_date
+            cash_time = (cf_td - self.td).days / 365
             cash_amt = self.amount
             cf_td_data.append([cf_td, cash_time, cash_amt])
 
         elif self.interest_payment_type == '12': # 복리채인 경우
-            cf_td = due_date
-            cash_time = (cf_td - td).days / 365
+            cf_td = self.due_date
+            cash_time = (cf_td - self.td).days / 365
             cash_amt = self.amount*((1+self.coupon_rate/self.num_of_interest_payment)**(self.num_of_interest_payment*maturity))
             cf_td_data.append([cf_td, cash_time, cash_amt])
 
         elif self.interest_payment_type == '14': # 단리채인 경우
-            cf_td = due_date
-            cash_time = (cf_td - td).days / 365
+            cf_td = self.due_date
+            cash_time = (cf_td - self.td).days / 365
             cash_amt = self.amount * (1 + self.coupon_rate * maturity)
             cf_td_data.append([cf_td, cash_time, cash_amt])
 
         elif self.interest_payment_type == '15': #복5단2인 경우
-            cf_td = due_date
-            cash_time = (cf_td - td).days / 365
+            cf_td = self.due_date
+            cash_time = (cf_td - self.td).days / 365
             cash_amt = self.amount * ((1 + self.coupon_rate / self.num_of_interest_payment) ** (self.num_of_interest_payment * 5))
             cash_amt += self.amount * self.coupon_rate * 2
             cf_td_data.append([cf_td, cash_time, cash_amt])
 
         else:  # 이표채인 경우
-            diff = (due_date - issue_date).days / 365 # 날짜 차이
+            diff = (self.due_date - self.issue_date).days / 365 # 날짜 차이
             cf_num = math.ceil(diff * self.num_of_interest_payment)
             interest_amount = self.amount * self.coupon_rate * 1 / self.num_of_interest_payment
 
-            cf_td = issue_date
+            cf_td = self.issue_date
             # 발행일부터 만기일까지의 현금흐름 발생일을 만들어 낸다.
             i = 1
             while i <= cf_num:
                 cf_td += relativedelta(months=12/self.num_of_interest_payment)
-                if (cf_td - td).days > 0:
+                if (cf_td - self.td).days > 0:
                     cash_amt = interest_amount
                     if i == cf_num:  # 마지막 현금흐름의 경우
-                        if cf_td == due_date:
+                        if cf_td == self.due_date:
                             cash_amt = self.amount + interest_amount
                         else:
-                            cf_td = due_date
+                            cf_td = self.due_date
                             cash_amt = self.amount
                             if len(cf_td_data) == 0:
-                                cash_amt += interest_amount * ((due_date - td).days / 365) * self.num_of_interest_payment
+                                cash_amt += interest_amount * ((self.due_date - self.td).days / 365) * self.num_of_interest_payment
                             else:
-                                cash_amt += interest_amount * ((due_date - prev_cf_td).days / 365) * self.num_of_interest_payment
-                    cash_time = (cf_td - td).days / 365
+                                cash_amt += interest_amount * ((self.due_date - prev_cf_td).days / 365) * self.num_of_interest_payment
+                    cash_time = (cf_td - self.td).days / 365
                     cf_td_data.append([cf_td, cash_time, cash_amt])
                     prev_cf_td = cf_td
                 i += 1
         cf = pd.DataFrame(cf_td_data, columns=['cf_td', 'cash_time', 'cash_amt'])
-        # cf.drop(['cf_td'], axis=1, inplace=True)
         return cf
-        # for i in range(cf_num):
-        #     if i == 0:
-        #         cf_td = issue_date
-        #     elif i == (cf_num - 1):
-        #         cf_td = due_date
-        #         cash_amt = self.amount
-        #         # 잔존만기까지의 남은 기간만큼의 이자를 계산해서 더해 줍니다
-        #         # 원래 이자금액 = (self.amount * self.coupon_rate * self.interestpaycalmcnt / 12)
-        #         # 잔존만기까지의 남은 기간 (cf_td - cf[i-1][0]).days
-        #         chk_td = lambda x: x if x in locals() else td
-        #         cash_amt += (self.amount * self.coupon_rate * self.interestpaycalmcnt / 12) * ((cf_td - chk_td(prev_cf_td)).days / 365)/(self.interestpaycalmcnt/12)
-        #     else:
-        #         cf_td += relativedelta(months=self.interestpaycalmcnt)
-        #         cash_amt = self.amount * self.coupon_rate * self.interestpaycalmcnt / 12
-        #     # 듀레이션 산출 시점 기준으로 예전 현금흐름이면 버린다.
-        #     if (cf_td - td).days < 0:
-        #         next
-        #     else:
-        #         cash_time = (cf_td - td).days / 365
-        #         cf.append([cf_td, cash_time, cash_amt])
-        #         # 현금흐름이 발생했던 날을 저장해 둔다. (잔존만기까지의 이자 계산에 필요)
-        #         prev_cf_td = cf_td
-
-        # cf는 pandas dataframe 입니다.
-
-    # 채권 현금흐름이 발생하는 시점별로 spot curve 데이터 상에서 어디에 위치하는지 찾아본다
-    # 예) 4개월 후의 현금흐름은 spot curve 데이터 상에서 3개월과 6개월 사이에 위치한다
 
     # cf_data : num, cash_time, cash_amt
     # spot_yield_data : key_rate, yield
@@ -158,8 +127,8 @@ class Bond:
             spot_curve_plus = spot_yield_data.copy()
             spot_curve_minus = spot_yield_data.copy()
 
-            spot_curve_plus.iloc[i]['yield'] += delta
-            spot_curve_minus.iloc[i]['yield'] -= delta
+            spot_curve_plus.loc[i, 'yield'] += delta
+            spot_curve_minus.loc[i, 'yield'] -= delta
 
             price_plus = self.price(cf_data,  spot_curve_plus)
             price_minus = self.price(cf_data, spot_curve_minus)

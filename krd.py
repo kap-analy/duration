@@ -29,59 +29,7 @@ start_time = timeit.default_timer() #시작 시간 체크
 # interestpaycalmcnt: 이자지급계산월수
 # maturity: 채권의 만기(연)
 
-########################################################################
-# 데이터 입력 부분                                                       #
-########################################################################
-
-# cash_count = 5
-# coupon_rate = 0.03
-# amount = 10000
-# interestpaycalmcnt = 6
-# maturity = 3
-
-# cf_raw = [[1, 0.533, 2500000], [2, 1.033, 2500000], [3, 1.533, 2500000], [4, 2.033, 2500000], [5, 2.533, 2500000],
-#           [6, 3.033, 2500000], [7, 3.533, 2500000], [8, 4.033, 2500000], [9, 4.533, 2500000], [10, 5.033, 2500000],
-#           [11, 5.533, 2500000], [12, 6.033, 2500000], [13, 6.533, 2500000], [14, 7.033, 2500000], [15, 7.533, 2500000],
-#           [16, 8.033, 2500000], [17, 8.533, 2500000], [18, 9.033, 2500000], [19, 9.533, 2500000], [20, 10.033, 102500000]]
-# cf_data = pd.DataFrame(data = cf_raw, columns=['num', 'cash_time', 'cash_amt'])
-
-# spot_curve_raw = [[0.25, 0.449], [0.5, 0.624], [0.75, 0.637], [1, 0.653], [1.5, 0.797], [2, 0.871],
-#                   [2.5, 0.935], [3, 0.984], [4, 1.149], [5, 1.307], [7, 1.393], [10, 1.575], [20, 1.712], [30, 1.695]]
-# spot_yield_data = pd.DataFrame(data = spot_curve_raw, columns=['key_rate', 'yield'])
 logger.debug("key rate duration 산출을 시작합니다.")
-
-########################################################################
-# 데이터를 입력합니다.                                                       #
-########################################################################
-# td = '20200904' # key rate duration을 구할 날짜입니다.
-# issue_date = '20190208' # 채권의 발행일
-# due_date  = '20390208' # 채권의 만기일
-# amount = 10000
-# coupon_rate = 0.02191
-# interestpaycalmcnt = 3
-# sectorcode = 'F212'
-#
-# # Bond 객체를 생성합니다.
-# bond1 = Bond(td=td, issue_date=issue_date, due_date=due_date,
-#              amount=amount, coupon_rate=coupon_rate, interestpaycalmcnt=interestpaycalmcnt)
-#
-# bond1_cf = bond1.bond_cf()
-# print("채권 현금흐름은 다음과 같습니다. !!!!!!")
-# print(bond1_cf)
-#
-# print("spot yield는 다음과 같습니다. !!!!!!")
-# spot_yield_data = get_spot_yield(td, sectorcode)
-#
-# print(spot_yield_data)
-#
-# krd = bond1.key_rate_duration(spot_yield_data=spot_yield_data, delta=0.01)
-# print("key rate duration은 다음과 같습니다.\n", krd)
-# print("key rate duration의 합: ", np.sum(krd))
-
-#####################
-# 정답
-# 0.001142808	0.002275107	0.003420771	0.007383728	0.013606139	0.017979911	0.022392036	0.04212059	0.069864591	0.135734599	0.29874631	8.167940176	1.923042661	0	10.70564943
-#################
 
 # 날짜를 입력합니다.
 td = '20200904'
@@ -89,16 +37,25 @@ amount = 10000
 # 해당 날짜의 대상종목을 받아옵니다.
 bond_info = get_bond_info(td)
 
+# 해당 날짜의 spot yield를 받아옵니다.
+spot_yield_data = get_spot_yield(td)
 # bond_info는 pandas dataframe으로 다음 정보가 있습니다.
 #  securitycode, sectorcode,  issue_date, due_date, coupon_rate, interestpaycalmcnt, dur
 # df는 채권 key rate duration을 저장하는 pandas dataframe입니다.
+# 날짜를 변환합니다.
+td = datetime.strptime(td, '%Y%m%d').date()
+
 df = pd.DataFrame()
 # marks = []
 # range(len(bond_info))
-for i in range(len(bond_info)):
+for i in range(600):
     info = bond_info.iloc[i]
+    # 날짜를 datetime 타입으로 변경합니다.
+    issue_date = datetime.strptime(info['issue_date'], '%Y%m%d').date()
+    due_date = datetime.strptime(info['due_date'], '%Y%m%d').date()
+
     # Bond 객체를 생성합니다.
-    bond = Bond(td=td, issue_date=info['issue_date'], due_date=info['due_date'],
+    bond = Bond(td=td, issue_date=issue_date, due_date=due_date,
                 amount=amount, coupon_rate=info['coupon_rate'],
                 num_of_interest_payment=info['num_of_interest_payment'],
                 interest_payment_type=info['interest_payment_type'])
@@ -107,12 +64,14 @@ for i in range(len(bond_info)):
     if len(bond_cf) == 0: # 곧 만기가 도래하여 현금흐름이 존재하지 않는 경우
         krd = [0 for _ in range(14)]
     else:
-        spot_yield_data = get_spot_yield(td, info['sectorcode'])
-        krd = bond.key_rate_duration(cf_data=bond_cf, spot_yield_data=spot_yield_data, delta=0.01)
+        yield_data = spot_yield_data.loc[info['sectorcode']]
+        yield_data = pd.DataFrame(yield_data).reset_index()
+        yield_data.columns=['key_rate', 'yield']
+        krd = bond.key_rate_duration(cf_data=bond_cf, spot_yield_data=yield_data, delta=0.01)
     krd_df = pd.DataFrame(krd).transpose()
     krd_df.columns = ['M3', 'M6', 'M9', 'Y1', 'Y1.5', 'Y2', 'Y2.5', 'Y3', 'Y4', 'Y5', 'Y7', 'Y10', 'Y20', 'Y30']
 
-    krd_df = krd_df.assign(**{'StdDate': datetime.strptime(td, '%Y%m%d').date(),
+    krd_df = krd_df.assign(**{'StdDate': td,
                                 'SecurityCode': info['securitycode'],
                                 'KeySum': np.sum(krd, axis = 0)})
     df = df.append(krd_df)
@@ -121,3 +80,4 @@ print(df)
 
 terminate_time = timeit.default_timer() #종료 시간 체크
 print("%f초 걸렸습니다" %(terminate_time - start_time))
+
