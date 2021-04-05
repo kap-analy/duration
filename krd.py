@@ -84,7 +84,7 @@ logger.debug("key rate duration 산출을 시작합니다.")
 #################
 
 # 날짜를 입력합니다.
-td = '20200904'
+td = '20200901'
 amount = 10000
 # 해당 날짜의 대상종목을 받아옵니다.
 bond_info = get_bond_info(td)
