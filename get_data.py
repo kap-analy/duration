@@ -1,5 +1,5 @@
 
-from odbc import *
+from kap_db_connect import *
 import math
 from dateutil.relativedelta import relativedelta
 
@@ -32,7 +32,7 @@ def get_bond_info(td):
 	                    "and A.옵션부사채구분 = 0  " + \
 	                    "and A.이자지급방법 like '1%'  " + \
 	                    "and A.표준코드 = B.SecurityCode  " + \
-	                    "and B.StdDate = '" + td + "'"
+	                    "and B.StdDate = '" + td + "' order by securitycode"
 
     bond_info = pd.read_sql(sql, conn)
 
@@ -81,9 +81,21 @@ def get_one_bond_info(td, securitycode):
 	                    "and A.SecurityCode = B.SecurityCode " + \
 	                    "and B.StdDate = '" + td + "' " + \
 	                    "and A.CR not in ('BB+', 'BB-', 'BB', 'B+', 'B', 'B-', 'CCC')" + \
-                        "and A.SecurityCode = '" + securitycode + "'"
+                        "and A.SecurityCode = '" + securitycode + "'  order by securitycode"
     bond_info = pd.read_sql(sql, conn)
 
     return bond_info
 
+def get_amortized_bond():
+    # odbc 객체를 생성합니다.
+    kapodbc = Kapodbc(server='10.10.10.20,33440')
+    conn, cursor = kapodbc.connect()
+    sql = "SELECT securitycode = SecurityCode " + \
+                ",defered_period = DeferedPeriod " + \
+                ",amortized_period = AmortizedPeriod " + \
+                ",num_of_amortized_amt = NumOfAmortizedAmt " + \
+                ",interest_defered = InterestDeferedYN " + \
+        "FROM [BPRPA].[dbo].[M_AMORTIZED_BOND] "
+    amortized_bond_info = pd.read_sql(sql, conn)
 
+    return amortized_bond_info

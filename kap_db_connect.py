@@ -1,4 +1,5 @@
 import pyodbc
+from sqlalchemy import create_engine, MetaData, Table, select
 
 import numpy as np
 import pandas as pd
@@ -9,6 +10,7 @@ server = '10.10.10.18,33440'
 db = 'BPRPA'
 user = 'kap_assetm'
 pwd = 'bprpaapp#2018'
+dns = 'kap_assetm'
 
 class Kapodbc:
 
@@ -26,3 +28,13 @@ class Kapodbc:
 
         return conn, cursor
 
+
+class Kapsqlalchemy:
+    def __init__(self, user=user, pwd=pwd, dns = dns):
+        self.user = user
+        self.pwd = pwd
+        self.dns = dns
+
+    def create_engine(self):
+        conn = create_engine('mssql+pyodbc://' + self.user + ':' + self.pwd + '@' + self.dns)
+        return conn
